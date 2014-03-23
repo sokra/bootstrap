@@ -64,9 +64,12 @@
       }
     }
 
-    this.options.selector ?
-      (this._options = $.extend({}, this.options, { trigger: 'manual', selector: '' })) :
+    if (this.options.selector) {
+      this._options = $.extend({}, this.options, { trigger: 'manual', selector: '' })
+    } else {
       this.fixTitle()
+    }
+
   }
 
   Tooltip.prototype.getDefaults = function () {
@@ -90,11 +93,13 @@
     var options  = {}
     var defaults = this.getDefaults()
 
-    this._options && $.each(this._options, function (key, value) {
-      if (defaults[key] !== value) {
-        options[key] = value
-      }
-    })
+    if (this._options) {
+      $.each(this._options, function (key, value) {
+        if (defaults[key] !== value) {
+          options[key] = value
+        }
+      })
+    }
 
     return options
   }
@@ -181,7 +186,11 @@
         .css({ top: 0, left: 0, display: 'block' })
         .addClass(placement)
 
-      this.options.container ? $tip.appendTo(this.options.container) : $tip.insertAfter(this.$element)
+      if (this.options.container) {
+        $tip.appendTo(this.options.container)
+      } else {
+        $tip.insertAfter(this.$element)
+      }
 
       var pos          = this.getPosition()
       var actualWidth  = $tip[0].offsetWidth
@@ -212,11 +221,14 @@
         that.$element.trigger('shown.bs.' + that.type)
       }
 
-      $.support.transition && this.$tip.hasClass('fade') ?
+      if ($.support.transition && this.$tip.hasClass('fade')) {
         $tip
           .one($.support.transition.end, complete)
-          .emulateTransitionEnd(150) :
+          .emulateTransitionEnd(150)
+      } else {
         complete()
+      }
+
     }
   }
 
@@ -309,11 +321,13 @@
 
     $tip.removeClass('in')
 
-    $.support.transition && this.$tip.hasClass('fade') ?
+    if ($.support.transition && this.$tip.hasClass('fade')) {
       $tip
         .one($.support.transition.end, complete)
-        .emulateTransitionEnd(150) :
+        .emulateTransitionEnd(150)
+    } else {
       complete()
+    }
 
     this.hoverState = null
 
@@ -429,7 +443,12 @@
       }
     }
 
-    self.tip().hasClass('in') ? self.leave(self) : self.enter(self)
+    if (self.tip().hasClass('in')) {
+      self.leave(self)
+    } else {
+      self.enter(self)
+    }
+
   }
 
   Tooltip.prototype.destroy = function () {
