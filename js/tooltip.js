@@ -65,7 +65,10 @@
     }
 
     if (this.options.selector) {
-      this._options = $.extend({}, this.options, { trigger: 'manual', selector: '' })
+      this._options = $.extend({}, this.options, {
+        trigger: 'manual',
+        selector: ''
+      })
     } else {
       this.fixTitle()
     }
@@ -181,10 +184,11 @@
         placement = placement.replace(autoToken, '') || 'top'
       }
 
-      $tip
-        .detach()
-        .css({ top: 0, left: 0, display: 'block' })
-        .addClass(placement)
+      $tip.detach().css({
+        top: 0,
+        left: 0,
+        display: 'block'
+      }).addClass(placement)
 
       if (this.options.container) {
         $tip.appendTo(this.options.container)
@@ -336,7 +340,7 @@
 
   Tooltip.prototype.fixTitle = function () {
     var $e = this.$element
-    if ($e.attr('title') || typeof($e.attr('data-original-title')) !== 'string') {
+    if ($e.attr('title') || typeof ($e.attr('data-original-title')) !== 'string') {
       $e.attr('data-original-title', $e.attr('title') || '').attr('title', '')
     }
   }
@@ -365,7 +369,10 @@
   }
 
   Tooltip.prototype.getViewportAdjustedDelta = function (placement, pos, actualWidth, actualHeight) {
-    var delta = { top: 0, left: 0 }
+    var delta = {
+      top: 0,
+      left: 0
+    }
     if (!this.$viewport) {
       return delta
     }
