@@ -76,7 +76,7 @@
 {% highlight scss %}
 // Variables
 @link-color:       @brand-primary;
-@link-color-hover: darken(@link-color, 15%);
+@link-hover-color: darken(@link-color, 15%);
 
 // Usage
 a {
@@ -84,12 +84,12 @@ a {
   text-decoration: none;
 
   &:hover {
-    color: @link-color-hover;
+    color: @link-hover-color;
     text-decoration: underline;
   }
 }
 {% endhighlight %}
-  <p>Note that the <code>@link-color-hover</code> uses a function, another awesome tool from Less, to automagically create the right hover color. You can use <code>darken</code>, <code>lighten</code>, <code>saturate</code>, and <code>desaturate</code>.</p>
+  <p>Note that the <code>@link-hover-color</code> uses a function, another awesome tool from Less, to automagically create the right hover color. You can use <code>darken</code>, <code>lighten</code>, <code>saturate</code>, and <code>desaturate</code>.</p>
 
   <h3 id="less-variables-typography">Typography</h3>
   <p>Easily set your type face, text size, leading, and more with a few quick variables. Bootstrap makes use of these as well to provide easy typographic mixins.</p>
@@ -378,10 +378,10 @@ a {
 {% highlight scss %}
 #gradient > .striped(#333; 45deg);
 {% endhighlight %}
-  <p>Up the ante and use three colors instead. Set the first color, the second color, the second color's color stop (a decimal value like 0.25), and the third color with these mixins:</p>
+  <p>Up the ante and use three colors instead. Set the first color, the second color, the second color's color stop (a percentage value like 25%), and the third color with these mixins:</p>
 {% highlight scss %}
-#gradient > .vertical-three-colors(#777; #333; .25; #000);
-#gradient > .horizontal-three-colors(#777; #333; .25; #000);
+#gradient > .vertical-three-colors(#777; #333; 25%; #000);
+#gradient > .horizontal-three-colors(#777; #333; 25%; #000);
 {% endhighlight %}
   <p><strong>Heads up!</strong> Should you ever need to remove a gradient, be sure to remove any IE-specific <code>filter</code> you may have added. You can do that by using the <code>.reset-filter()</code> mixin alongside <code>background-image: none;</code>.</p>
 

@@ -46,6 +46,12 @@
         ...
       </div>
     </div>
+    <div class="item">
+      <img src="..." alt="...">
+      <div class="carousel-caption">
+        ...
+      </div>
+    </div>
     ...
   </div>
 
@@ -105,7 +111,7 @@
     </div>
   </div><!-- /example -->
 {% highlight html %}
-<div class="item active">
+<div class="item">
   <img src="..." alt="...">
   <div class="carousel-caption">
     <h3>...</h3>
@@ -197,6 +203,11 @@ $('.carousel').carousel({
 
   <h3>Events</h3>
   <p>Bootstrap's carousel class exposes two events for hooking into carousel functionality.</p>
+  <p>Both events have the following additional properties:</p>
+  <ul>
+    <li><code>direction</code>: The direction in which the carousel is sliding (either <code>"left"</code> or <code>"right"</code>).</li>
+    <li><code>relatedTarget</code>: The DOM element that is being slid into place as the active item.</li>
+  </ul>
   <div class="table-responsive">
     <table class="table table-bordered table-striped">
       <thead>

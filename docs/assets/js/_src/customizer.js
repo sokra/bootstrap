@@ -43,7 +43,7 @@ window.onload = function () { // wait for load in a dumb way because B-0
     return match && decodeURIComponent(match[1].replace(/\+/g, ' '))
   }
 
-  function createGist(configJson) {
+  function createGist(configJson, callback) {
     var data = {
       description: 'Bootstrap Customizer Config',
       'public': true,
@@ -61,10 +61,18 @@ window.onload = function () { // wait for load in a dumb way because B-0
     })
     .success(function (result) {
       var origin = window.location.protocol + '//' + window.location.host
-      history.replaceState(false, document.title, origin + window.location.pathname + '?id=' + result.id)
+      var newUrl = origin + window.location.pathname + '?id=' + result.id
+      history.replaceState(false, document.title, newUrl)
+      callback(result.html_url, newUrl)
     })
     .error(function (err) {
-      showError('<strong>Ruh roh!</strong> Could not save gist file, configuration not saved.', err)
+      try {
+        showError('<strong>Ruh roh!</strong> Could not save gist file, configuration not saved.', err)
+      }
+      catch (sameErr) {
+        // deliberately ignore the error
+      }
+      callback('<none>', '<none>')
     })
   }
 
@@ -155,7 +163,7 @@ window.onload = function () { // wait for load in a dumb way because B-0
     complete(content)
   }
 
-  function generateCustomCSS(vars) {
+  function generateCustomLess(vars) {
     var result = ''
 
     for (var key in vars) {
@@ -178,10 +186,20 @@ window.onload = function () { // wait for load in a dumb way because B-0
     var IMPORT_REGEX = /^@import \"(.*?)\";$/
     var lessLines = __less[lessFilename].split('\n')
 
-    for (var i = 0, imports = []; i < lessLines.length; i++) {
-      var match = IMPORT_REGEX.exec(lessLines[i])
-      if (match) imports.push(match[1])
-    }
+    var imports = []
+    $.each(lessLines, function (index, lessLine) {
+      var match = IMPORT_REGEX.exec(lessLine)
+      if (match) {
+        var importee = match[1]
+        var transitiveImports = includedLessFilenames(importee)
+        $.each(transitiveImports, function (index, transitiveImportee) {
+          if ($.inArray(transitiveImportee, imports) === -1) {
+            imports.push(transitiveImportee)
+          }
+        })
+        imports.push(importee)
+      }
+    })
 
     return imports
   }
@@ -189,7 +207,8 @@ window.onload = function () { // wait for load in a dumb way because B-0
   function generateLESS(lessFilename, lessFileIncludes, vars) {
     var lessSource = __less[lessFilename]
 
-    $.each(includedLessFilenames(lessFilename), function(index, filename) {
+    var lessFilenames = includedLessFilenames(lessFilename)
+    $.each(lessFilenames, function(index, filename) {
       var fileInclude = lessFileIncludes[filename]
 
       // Files not explicitly unchecked are compiled into the final stylesheet.
@@ -200,7 +219,7 @@ window.onload = function () { // wait for load in a dumb way because B-0
 
       // Custom variables are added after Bootstrap variables so the custom
       // ones take precedence.
-      if (('variables.less' === filename) && vars) lessSource += generateCustomCSS(vars)
+      if (('variables.less' === filename) && vars) lessSource += generateCustomLess(vars)
     })
 
     lessSource = lessSource.replace(/@import[^\n]*/gi, '') //strip any imports
@@ -212,7 +231,9 @@ window.onload = function () { // wait for load in a dumb way because B-0
       paths: ['variables.less', 'mixins.less'],
       optimization: 0,
       filename: baseFilename + '.css'
-    }).parse(lessSource, function (err, tree) {
+    })
+
+    parser.parse(lessSource, function (err, tree) {
       if (err) {
         return showError('<strong>Ruh roh!</strong> Could not parse less files.', err)
       }
@@ -221,7 +242,7 @@ window.onload = function () { // wait for load in a dumb way because B-0
     })
   }
 
-  function generateCSS() {
+  function generateCSS(preamble) {
     var oneChecked = false
     var lessFileIncludes = {}
     $('#less-section input').each(function() {
@@ -242,8 +263,8 @@ window.onload = function () { // wait for load in a dumb way because B-0
         $(this).val() && (vars[$(this).prev().text()] = $(this).val())
       })
 
-    var bsLessSource    = generateLESS('bootstrap.less', lessFileIncludes, vars)
-    var themeLessSource = generateLESS('theme.less',     lessFileIncludes, vars)
+    var bsLessSource    = preamble + generateLESS('bootstrap.less', lessFileIncludes, vars)
+    var themeLessSource = preamble + generateLESS('theme.less',     lessFileIncludes, vars)
 
     try {
       compileLESS(bsLessSource, 'bootstrap', result)
@@ -255,8 +276,27 @@ window.onload = function () { // wait for load in a dumb way because B-0
     return result
   }
 
-  function generateJavascript() {
+  function uglify(js) {
+    var ast = UglifyJS.parse(js)
+    ast.figure_out_scope()
+
+    var compressor = UglifyJS.Compressor()
+    var compressedAst = ast.transform(compressor)
+
+    compressedAst.figure_out_scope()
+    compressedAst.compute_char_frequency()
+    compressedAst.mangle_names()
+
+    var stream = UglifyJS.OutputStream()
+    compressedAst.print(stream)
+
+    return stream.toString()
+  }
+
+  function generateJS(preamble) {
     var $checked = $('#plugin-section input:checked')
+    var jqueryCheck = 'if (typeof jQuery === "undefined") { throw new Error("Bootstrap\'s JavaScript requires jQuery") }\n\n'
+
     if (!$checked.length) return false
 
     var js = $checked
@@ -264,9 +304,12 @@ window.onload = function () { // wait for load in a dumb way because B-0
       .toArray()
       .join('\n')
 
+    preamble = cw + preamble
+    js = jqueryCheck + js
+
     return {
-      'bootstrap.js': js,
-      'bootstrap.min.js': cw + uglify(js)
+      'bootstrap.js': preamble + js,
+      'bootstrap.min.js': preamble + uglify(js)
     }
   }
 
@@ -312,7 +355,6 @@ window.onload = function () { // wait for load in a dumb way because B-0
   })
 
   var $compileBtn = $('#btn-compile')
-  var $downloadBtn = $('#btn-download')
 
   $compileBtn.on('click', function (e) {
     var configData = getCustomizerData()
@@ -322,10 +364,19 @@ window.onload = function () { // wait for load in a dumb way because B-0
 
     $compileBtn.attr('disabled', 'disabled')
 
-    generateZip(generateCSS(), generateJavascript(), generateFonts(), configJson, function (blob) {
-      $compileBtn.removeAttr('disabled')
-      saveAs(blob, 'bootstrap.zip')
-      createGist(configJson)
+    createGist(configJson, function (gistUrl, customizerUrl) {
+      configData.customizerUrl = customizerUrl
+      configJson = JSON.stringify(configData, null, 2)
+
+      var preamble = '/*!\n' +
+        ' * Generated using the Bootstrap Customizer (' + customizerUrl + ')\n' +
+        ' * Config saved to config.json and ' + gistUrl + '\n' +
+        ' */\n'
+
+      generateZip(generateCSS(preamble), generateJS(preamble), generateFonts(), configJson, function (blob) {
+        $compileBtn.removeAttr('disabled')
+        saveAs(blob, 'bootstrap.zip')
+      })
     })
   });
 
